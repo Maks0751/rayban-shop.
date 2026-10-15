@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ray-Ban Smart Vision (Supabase)</title>
+    <!-- Официальный клиент Supabase для работы с БД напрямую из браузера -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a1a; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        header { background: #111; padding: 30px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #333; }
+        h1 { margin: 0; color: #fff; font-size: 2rem; }
+        .catalog { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; max-width: 1200px; margin: 0 auto; }
+        .card { background: #222; border-radius: 12px; padding: 20px; width: 260px; text-align: left; border: 1px solid #444; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); border-color: #e63946; }
+        .price { font-size: 1.4rem; font-weight: bold; color: #e63946; margin: 10px 0; }
+        .quantity { color: #aaa; font-size: 0.9rem; }
+        .stats { background: #111; color: #e63946; padding: 20px; border-radius: 12px; margin-top: 40px; display: inline-block; border: 1px solid #333; font-size: 1.1rem; }
+        .stats strong { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🕶️ Ray-Ban Smart Vision</h1>
+        <p style="color: #888;">Витрина очков в реальном времени из базы Supabase</p>
+    </header>
+
+    <div class="catalog" id="catalog">Синхронизация с базой данных...</div>
+    <div class="stats" id="stats">Загрузка статистики...</div>
+
+    <script>
+        // === ВСТАВЛЕНЫ ВАШИ ДАННЫЕ ИЗ SUPABASE ===
+        const SUPABASE_URL = "https://supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_A6ZbPGLz8QgT8-wCjzi3NQ_CAWWox84";
+
+        const supabase = @supabase/supabase-js.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadData() {
+            // Запрос к таблице products (Ваш SELECT * FROM products)
+            const { data: products, error } = await supabase.from('products').select('*');
+
+            if (error) {
+                console.error(error);
+                document.getElementById('catalog').innerText = "Ошибка подключения к базе. Проверьте RLS или ключи.";
+                return;
+            }
+
+            const catalog = document.getElementById('catalog');
+            catalog.innerHTML = '';
+            
+            if (!products || products.length === 0) {
+                catalog.innerHTML = '<p>В таблице products пока нет записей.</p>';
+                return;
+            }
+            
+            let totalModels = products.length;
+            let totalQuantity = 0;
+            let totalSum = 0;
+
+            products.forEach(item => {
+                totalQuantity += item.quantity;
+                totalSum += (item.price * item.quantity);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3 style="margin:0 0 10px 0;">${item.name}</h3>
+                    <p class="price">${Number(item.price).toLocaleString('ru-RU')} ₸</p>
+                    <p class="quantity">Остаток на складе: <b>${item.quantity} шт.</b></p>
+                `;
+                catalog.appendChild(card);
+            });
+
+            // Вывод итогов (Ваш SELECT COUNT(*), SUM(quantity)...)
+            document.getElementById('stats').innerHTML = `
+                <strong>Моделей в базе:</strong> ${totalModels} | 
+                <strong>Всего единиц:</strong> ${totalQuantity} шт. | 
+                <strong>Общая стоимость:</strong> ${totalSum.toLocaleString('ru-RU')} ₸
+            `;
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
